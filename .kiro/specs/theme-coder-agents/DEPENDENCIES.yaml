@@ -1,0 +1,67 @@
+provides:
+  - id: internal/agents-theme-coder@v1
+    stability: beta
+    slas:
+      latency_ms_p50: 5000  # 5 seconds for theme generation
+      latency_ms_p99: 15000  # 15 seconds worst case
+      uptime_pct_monthly: 99.5
+
+consumes:
+  - id: models/codebook@v1
+    required_fields: [version, account_id, codes, created_at, updated_at]
+    optional_fields: []
+    behavior:
+      on_missing_field: reject_with_error
+      on_unknown_version: reject_with_error
+
+internal_dependencies:
+  - component: cost-manager
+    purpose: Track theme generation costs
+    failure_mode: log_and_continue
+
+external_dependencies:
+  - service: openai_api
+    purpose: Theme generation via GPT-4o
+    failure_mode: retry_then_abort
+    retry_strategy: exponential_backoff_3x
+  
+  - service: llmlingua
+    purpose: Intelligent codebook compression
+    failure_mode: fallback_to_truncation
+    retry_strategy: none
+
+optional_dependencies:
+  - service: langchain
+    purpose: DocumentCompressor interface for LLMLingua
+    failure_mode: fallback_to_truncation
+
+configuration:
+  - parameter: COMPRESSION_THRESHOLD_CODES
+    default: 100
+    description: Trigger compression when codebook has more than this many codes
+    validation: integer >= 1
+  
+  - parameter: COMPRESSION_THRESHOLD_TOKENS
+    default: 50000
+    description: Trigger compression when codebook exceeds this token count
+    validation: integer >= 1000
+  
+  - parameter: PRESERVE_QUOTES_PER_CODE
+    default: 1
+    description: Minimum quotes to preserve per code during compression
+    validation: integer >= 1
+  
+  - parameter: FALLBACK_ENABLED
+    default: true
+    description: Enable fallback to truncation if LLMLingua unavailable
+    validation: boolean
+  
+  - parameter: THEME_COUNT_MIN
+    default: 3
+    description: Minimum number of themes to generate
+    validation: integer >= 1
+  
+  - parameter: THEME_COUNT_MAX
+    default: 8
+    description: Maximum number of themes to generate
+    validation: integer >= 1

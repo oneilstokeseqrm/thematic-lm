@@ -1,0 +1,38 @@
+provides:
+  - id: models/codebook@v1
+    stability: beta
+    slas:
+      latency_ms_p50: 5000  # 5 seconds for typical codebook update
+      uptime_pct_monthly: 99.0
+
+consumes:
+  - id: internal/agents-code-aggregator@v1
+    required_fields: [label, quotes]
+    behavior:
+      on_missing_field: reject_with_error
+  
+  - id: models/quote_id@v1
+    required_fields: [quote_id, text, interaction_id, chunk_index, start_pos, end_pos]
+    behavior:
+      on_missing_field: reject_with_error
+
+internal_dependencies:
+  - component: cost-manager
+    purpose: Track embedding generation costs
+    failure_mode: log_and_continue
+
+external_dependencies:
+  - service: openai_api
+    purpose: Generate embeddings (text-embedding-3-large)
+    failure_mode: retry_then_abort
+    retry_strategy: exponential_backoff_3x
+  
+  - service: pinecone
+    purpose: Vector similarity search and storage
+    failure_mode: retry_then_abort
+    retry_strategy: exponential_backoff_3x
+  
+  - service: neon_postgres
+    purpose: Codebook snapshot persistence
+    failure_mode: abort_job
+    retry_strategy: exponential_backoff_3x

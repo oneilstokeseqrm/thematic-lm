@@ -1,0 +1,87 @@
+provides:
+  - id: internal/orchestration-pipeline@v1
+    stability: beta
+    slas:
+      latency_ms_p50: 30000  # 30 seconds for small datasets
+      uptime_pct_monthly: 99.0
+
+consumes:
+  - id: models/chunking@v1
+    required_fields: [chunk_index, text, start_pos, end_pos, token_count]
+    optional_fields: []
+    behavior:
+      on_missing_field: reject_with_error
+      on_unknown_version: reject_with_error
+  
+  - id: models/quote_id@v1
+    required_fields: [quote_id, text, interaction_id, chunk_index, start_pos, end_pos]
+    optional_fields: []
+    behavior:
+      on_missing_field: reject_with_error
+      on_unknown_version: reject_with_error
+  
+  - id: models/codebook@v1
+    required_fields: [version, account_id, codes, created_at, updated_at]
+    optional_fields: []
+    behavior:
+      on_missing_field: reject_with_error
+      on_unknown_version: reject_with_error
+  
+  - id: models/themes@v1
+    required_fields: [analysis_id, account_id, codebook_version, themes, created_at]
+    optional_fields: []
+    behavior:
+      on_missing_field: reject_with_error
+      on_unknown_version: reject_with_error
+
+internal_dependencies:
+  - component: coder-agents
+    purpose: Generate codes from interactions
+    failure_mode: partial_degradation  # Continue with successful agents
+  
+  - component: code-aggregator
+    purpose: Deduplicate and merge codes
+    failure_mode: abort_job
+  
+  - component: reviewer
+    purpose: Update codebook with new codes
+    failure_mode: abort_job
+  
+  - component: theme-coder-agents
+    purpose: Generate theme proposals
+    failure_mode: partial_degradation
+  
+  - component: theme-aggregator
+    purpose: Produce final themes
+    failure_mode: abort_job
+  
+  - component: cost-manager
+    purpose: Track token usage and costs
+    failure_mode: log_and_continue
+  
+  - component: observability
+    purpose: Structured logging
+    failure_mode: log_and_continue
+
+external_dependencies:
+  - service: neon_postgres
+    purpose: State persistence and checkpointing
+    failure_mode: abort_job
+    retry_strategy: exponential_backoff_3x
+  
+  - service: openai_api
+    purpose: LLM calls for agents
+    failure_mode: retry_then_abort
+    retry_strategy: exponential_backoff_3x
+  
+  - service: pinecone
+    purpose: Vector similarity search (via reviewer)
+    failure_mode: abort_job
+    retry_strategy: exponential_backoff_3x
+
+configuration:
+  - file: identities.yaml
+    required: true
+    load_time: process_start
+    validation: strict
+    failure_mode: fail_fast

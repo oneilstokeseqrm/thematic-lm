@@ -1,0 +1,49 @@
+# Email Thread Quote Example
+
+## Email Thread Structure
+
+### Message 0 (Original Email)
+```
+Subject: Climate Policy Proposal
+
+Dear Team,
+
+I'd like to propose a new initiative focused on renewable energy adoption...
+```
+
+### Message 1 (Reply)
+```
+Re: Climate Policy Proposal
+
+Great idea! However, we need to consider the upfront costs for homeowners...
+```
+
+### Message 2 (Reply to Reply)
+```
+Re: Climate Policy Proposal
+
+I agree about the cost concerns. Perhaps we could explore government subsidies or tax incentives to make solar panels more accessible to middle-income families.
+```
+
+## Quote (from Message 2)
+```
+"Perhaps we could explore government subsidies or tax incentives to make solar panels more accessible"
+```
+
+## Quote ID Components
+- interaction_id: `34567890-3456-7890-3456-789034567890` (thread ID)
+- message_index: `2` (third message in thread, 0-based)
+- chunk_index: `0` (first chunk of message 2)
+- start_pos: `45` (position within message 2 text)
+- end_pos: `145` (position within message 2 text)
+
+## Encoded Quote ID
+```
+34567890-3456-7890-3456-789034567890:msg_2:ch_0:45-145
+```
+
+## Important Notes
+- `msg_2` indicates the third message in the thread (0-based)
+- Offsets are relative to the MESSAGE text, not the entire thread
+- Each message is chunked independently if needed
+- Thread structure is preserved in the quote ID

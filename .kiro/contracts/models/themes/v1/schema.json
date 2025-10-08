@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://thematic-lm.eq.com/schemas/models/themes/v1/schema.json",
+  "title": "Themes Schema",
+  "description": "Schema for themes generated from codebook analysis",
+  "type": "object",
+  "required": [
+    "analysis_id",
+    "account_id",
+    "codebook_version",
+    "themes",
+    "created_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "analysis_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Analysis job that generated these themes"
+    },
+    "account_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Account identifier for tenant scoping"
+    },
+    "codebook_version": {
+      "type": "string",
+      "description": "Codebook version used for theme generation (e.g., 'v42')",
+      "pattern": "^v\\d+$"
+    },
+    "themes": {
+      "type": "array",
+      "description": "Array of generated themes",
+      "items": {
+        "$ref": "#/definitions/Theme"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When these themes were generated"
+    }
+  },
+  "definitions": {
+    "Theme": {
+      "type": "object",
+      "required": [
+        "theme_id",
+        "title",
+        "description",
+        "quotes",
+        "code_ids"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "theme_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this theme"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short descriptive title for the theme",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the theme",
+          "minLength": 1
+        },
+        "quotes": {
+          "type": "array",
+          "description": "Representative quotes exemplifying this theme",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/definitions/ThemeQuote"
+          }
+        },
+        "code_ids": {
+          "type": "array",
+          "description": "Code IDs from codebook that support this theme",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "ThemeQuote": {
+      "type": "object",
+      "required": [
+        "quote_id",
+        "text",
+        "interaction_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "quote_id": {
+          "type": "string",
+          "description": "Quote identifier matching format: interaction_id:ch_{chunk_index}:{start_pos}-{end_pos} or interaction_id:msg_{message_index}:ch_{chunk_index}:{start_pos}-{end_pos} for email threads",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(msg_\\d+:)?ch_\\d+:\\d+-\\d+$"
+        },
+        "text": {
+          "type": "string",
+          "description": "The actual quote text",
+          "minLength": 1
+        },
+        "interaction_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Source interaction identifier"
+        }
+      }
+    }
+  }
+}

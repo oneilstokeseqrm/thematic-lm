@@ -1,0 +1,25 @@
+provides:
+  - id: internal/agents-coder@v1
+    stability: beta
+
+consumes:
+  - id: models/chunking@v1
+    required_fields: [chunk_index, text, start_pos, end_pos, token_count]
+    behavior:
+      on_missing_field: reject_with_error
+  
+  - id: models/quote_id@v1
+    required_fields: [quote_id, text, interaction_id, chunk_index, start_pos, end_pos]
+    behavior:
+      on_missing_field: reject_with_error
+
+internal_dependencies:
+  - component: cost-manager
+    purpose: Track token usage and costs
+    failure_mode: log_and_continue
+
+external_dependencies:
+  - service: openai_api
+    purpose: Generate codes via GPT-4o
+    failure_mode: retry_then_fail
+    retry_strategy: exponential_backoff_3x

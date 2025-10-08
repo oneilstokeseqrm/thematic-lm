@@ -1,0 +1,50 @@
+provides:
+  - id: models/themes@v1
+    stability: beta
+    slas:
+      latency_ms_p50: 500  # 500ms for typical theme aggregation
+      latency_ms_p99: 2000  # 2 seconds worst case
+      uptime_pct_monthly: 99.5
+
+consumes:
+  - id: internal/agents-theme-coder@v1
+    required_fields: [title, description, quotes, code_ids]
+    optional_fields: [theme_id]
+    behavior:
+      on_missing_field: skip_theme_with_log
+      on_unknown_version: reject_with_error
+  
+  - id: models/quote_id@v1
+    required_fields: [quote_id, text, interaction_id]
+    optional_fields: [chunk_index, start_pos, end_pos]
+    behavior:
+      on_missing_field: skip_quote_with_log
+      on_unknown_version: reject_with_error
+
+internal_dependencies:
+  - component: theme-coder-agents
+    purpose: Generate theme proposals
+    failure_mode: partial_degradation
+
+external_dependencies: []
+
+configuration:
+  - parameter: SIMILARITY_THRESHOLD
+    default: 0.80
+    description: Similarity threshold for merging themes (0.0-1.0)
+    validation: float >= 0.0 and float <= 1.0
+  
+  - parameter: MIN_INTERACTIONS_PER_THEME
+    default: 3
+    description: Minimum number of distinct interactions required per theme
+    validation: integer >= 1
+  
+  - parameter: MAX_QUOTES_PER_THEME
+    default: 10
+    description: Maximum number of quotes to include per theme
+    validation: integer >= 1
+  
+  - parameter: MIN_DESCRIPTION_LENGTH
+    default: 10
+    description: Minimum character length for theme descriptions
+    validation: integer >= 1

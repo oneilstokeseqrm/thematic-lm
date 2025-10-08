@@ -1,0 +1,42 @@
+# Chunked Quote Example
+
+## Original Interaction Text (3000 tokens, split into 3 chunks)
+
+### Chunk 0 (tokens 0-1024)
+```
+Climate change is accelerating faster than predicted. Recent studies show that Arctic ice is melting at unprecedented rates...
+[continues for ~1024 tokens]
+```
+
+### Chunk 1 (tokens 1025-2048)
+```
+...The economic impacts are already being felt worldwide. Insurance companies are raising premiums in coastal areas...
+[continues for ~1024 tokens]
+```
+
+### Chunk 2 (tokens 2049-3000)
+```
+...Renewable energy adoption must accelerate dramatically. Solar and wind power are now cost-competitive with fossil fuels in many regions.
+```
+
+## Quote (from Chunk 2)
+```
+"Solar and wind power are now cost-competitive with fossil fuels in many regions"
+```
+
+## Quote ID Components
+- interaction_id: `23456789-2345-6789-2345-678923456789`
+- chunk_index: `2` (third chunk, 0-based indexing)
+- start_pos: `2156` (position in original text, not chunk-relative)
+- end_pos: `2238` (position in original text)
+
+## Encoded Quote ID
+```
+23456789-2345-6789-2345-678923456789:ch_2:2156-2238
+```
+
+## Important Notes
+- Offsets are relative to the ORIGINAL text, not the chunk
+- Chunk index indicates which chunk contains the quote
+- To retrieve the quote, use the original text with the offsets
+- Chunking is transparent to quote ID encoding

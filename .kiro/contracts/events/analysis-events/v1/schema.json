@@ -1,0 +1,214 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://thematic-lm.eq.com/schemas/events/analysis-events/v1/schema.json",
+  "title": "Analysis Events Schema",
+  "description": "Event schemas for the analysis pipeline lifecycle",
+  "type": "object",
+  "required": ["event_type"],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": ["analysis_accepted", "analysis_completed", "analysis_failed"],
+      "description": "Type of analysis event"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/AnalysisAcceptedEvent"
+    },
+    {
+      "$ref": "#/definitions/AnalysisCompletedEvent"
+    },
+    {
+      "$ref": "#/definitions/AnalysisFailedEvent"
+    }
+  ],
+  "definitions": {
+    "AnalysisAcceptedEvent": {
+      "type": "object",
+      "description": "Emitted when POST /analyze returns 202 Accepted",
+      "required": [
+        "event_type",
+        "analysis_id",
+        "account_id",
+        "tenant_id",
+        "estimated_cost_usd",
+        "timestamp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "analysis_accepted"
+        },
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the analysis job"
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Account identifier for tenant scoping"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant identifier for multi-tenancy"
+        },
+        "estimated_cost_usd": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Estimated cost in USD for the analysis"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when event was emitted"
+        }
+      }
+    },
+    "AnalysisCompletedEvent": {
+      "type": "object",
+      "description": "Emitted when analysis finishes successfully",
+      "required": [
+        "event_type",
+        "analysis_id",
+        "account_id",
+        "tenant_id",
+        "results",
+        "started_at",
+        "completed_at",
+        "timestamp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "analysis_completed"
+        },
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "results": {
+          "type": "object",
+          "required": [
+            "themes",
+            "codebook_version",
+            "codes_generated",
+            "interactions_processed"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "themes": {
+              "type": "array",
+              "description": "Array of generated themes"
+            },
+            "codebook_version": {
+              "type": "string",
+              "description": "Version identifier of the codebook used"
+            },
+            "codes_generated": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of codes generated in this analysis"
+            },
+            "interactions_processed": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of interactions processed"
+            }
+          }
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When analysis started"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When analysis completed"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When event was emitted"
+        }
+      }
+    },
+    "AnalysisFailedEvent": {
+      "type": "object",
+      "description": "Emitted when analysis fails",
+      "required": [
+        "event_type",
+        "analysis_id",
+        "account_id",
+        "tenant_id",
+        "error",
+        "started_at",
+        "failed_at",
+        "timestamp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "analysis_failed"
+        },
+        "analysis_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "account_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Machine-readable error code"
+            },
+            "message": {
+              "type": "string",
+              "description": "Human-readable error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Optional additional context"
+            }
+          }
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "failed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

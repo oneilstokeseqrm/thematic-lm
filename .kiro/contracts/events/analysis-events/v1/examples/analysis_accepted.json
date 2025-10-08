@@ -1,0 +1,8 @@
+{
+  "event_type": "analysis_accepted",
+  "analysis_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "account_id": "550e8400-e29b-41d4-a716-446655440000",
+  "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "estimated_cost_usd": 2.50,
+  "timestamp": "2024-01-15T10:30:00Z"
+}

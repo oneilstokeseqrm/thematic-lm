@@ -1,0 +1,117 @@
+{
+  "version": "v42",
+  "account_id": "550e8400-e29b-41d4-a716-446655440000",
+  "codes": [
+    {
+      "code_id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+      "label": "Climate anxiety and eco-grief",
+      "quotes": [
+        {
+          "quote_id": "12345678-1234-5678-1234-567812345678:ch_0:45-123",
+          "text": "I feel overwhelmed by climate news and worry about the future constantly",
+          "interaction_id": "12345678-1234-5678-1234-567812345678",
+          "chunk_index": 0,
+          "start_pos": 45,
+          "end_pos": 123
+        },
+        {
+          "quote_id": "23456789-2345-6789-2345-678923456789:ch_1:200-287",
+          "text": "The sense of helplessness about environmental destruction keeps me up at night",
+          "interaction_id": "23456789-2345-6789-2345-678923456789",
+          "chunk_index": 1,
+          "start_pos": 200,
+          "end_pos": 287
+        }
+      ],
+      "created_at": "2024-01-10T08:30:00Z",
+      "updated_at": "2024-01-15T10:45:00Z",
+      "decay_score": 0.95
+    },
+    {
+      "code_id": "d2b3c4d5-e6f7-8901-bcde-f12345678901",
+      "label": "Individual action vs systemic change",
+      "quotes": [
+        {
+          "quote_id": "34567890-3456-7890-3456-789034567890:ch_0:12-98",
+          "text": "Recycling feels pointless when corporations produce most emissions",
+          "interaction_id": "34567890-3456-7890-3456-789034567890",
+          "chunk_index": 0,
+          "start_pos": 12,
+          "end_pos": 98
+        }
+      ],
+      "created_at": "2024-01-12T14:20:00Z",
+      "updated_at": "2024-01-12T14:20:00Z",
+      "decay_score": 0.88
+    },
+    {
+      "code_id": "e3c4d5e6-f789-0123-cdef-123456789012",
+      "label": "Renewable energy adoption barriers",
+      "quotes": [
+        {
+          "quote_id": "45678901-4567-8901-4567-890145678901:ch_0:56-145",
+          "text": "Solar panels are too expensive for most homeowners despite long-term savings",
+          "interaction_id": "45678901-4567-8901-4567-890145678901",
+          "chunk_index": 0,
+          "start_pos": 56,
+          "end_pos": 145
+        },
+        {
+          "quote_id": "56789012-5678-9012-5678-901256789012:ch_0:23-112",
+          "text": "Landlords won't invest in green upgrades when tenants pay the utility bills",
+          "interaction_id": "56789012-5678-9012-5678-901256789012",
+          "chunk_index": 0,
+          "start_pos": 23,
+          "end_pos": 112
+        }
+      ],
+      "created_at": "2024-01-11T09:15:00Z",
+      "updated_at": "2024-01-14T16:30:00Z",
+      "decay_score": 0.92
+    },
+    {
+      "code_id": "f4d5e6f7-8901-2345-def0-234567890123",
+      "label": "Greenwashing and corporate accountability",
+      "quotes": [
+        {
+          "quote_id": "67890123-6789-0123-6789-012367890123:ch_0:78-189",
+          "text": "Companies claim to be carbon neutral while still investing in fossil fuels",
+          "interaction_id": "67890123-6789-0123-6789-012367890123",
+          "chunk_index": 0,
+          "start_pos": 78,
+          "end_pos": 189
+        }
+      ],
+      "created_at": "2024-01-13T11:45:00Z",
+      "updated_at": "2024-01-13T11:45:00Z",
+      "decay_score": 0.85
+    },
+    {
+      "code_id": "05e6f789-0123-4567-ef01-345678901234",
+      "label": "Climate migration and displacement",
+      "quotes": [
+        {
+          "quote_id": "78901234-7890-1234-7890-123478901234:ch_0:34-156",
+          "text": "Rising sea levels will force millions to relocate, creating refugee crises",
+          "interaction_id": "78901234-7890-1234-7890-123478901234",
+          "chunk_index": 0,
+          "start_pos": 34,
+          "end_pos": 156
+        },
+        {
+          "quote_id": "89012345-8901-2345-8901-234589012345:ch_2:450-567",
+          "text": "Drought is already displacing farming communities in developing nations",
+          "interaction_id": "89012345-8901-2345-8901-234589012345",
+          "chunk_index": 2,
+          "start_pos": 450,
+          "end_pos": 567
+        }
+      ],
+      "created_at": "2024-01-09T13:00:00Z",
+      "updated_at": "2024-01-15T09:20:00Z",
+      "decay_score": 0.90
+    }
+  ],
+  "created_at": "2024-01-15T10:45:30Z",
+  "updated_at": "2024-01-15T10:45:30Z"
+}

@@ -1,0 +1,28 @@
+# Simple Quote Example
+
+## Original Interaction Text
+```
+The climate crisis demands immediate action. We cannot afford to wait any longer for meaningful policy changes.
+```
+
+## Quote
+```
+"We cannot afford to wait any longer for meaningful policy changes"
+```
+
+## Quote ID Components
+- interaction_id: `12345678-1234-5678-1234-567812345678`
+- chunk_index: `0` (single chunk, no splitting needed)
+- start_pos: `45` (position of "W" in "We")
+- end_pos: `110` (position after "s" in "changes")
+
+## Encoded Quote ID
+```
+12345678-1234-5678-1234-567812345678:ch_0:45-110
+```
+
+## Validation
+- ✅ Matches canonical regex pattern
+- ✅ start_pos (45) < end_pos (110)
+- ✅ Chunk index is 0 (valid for single-chunk interaction)
+- ✅ Offsets are within text bounds (0-110)

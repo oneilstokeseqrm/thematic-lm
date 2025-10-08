@@ -1,0 +1,560 @@
+openapi: 3.0.3
+info:
+  title: Thematic-LM BFF API
+  version: 1.0.0
+  description: Backend-For-Frontend API for thematic analysis pipeline
+  contact:
+    name: Thematic-LM Team
+    email: support@eq.com
+
+servers:
+  - url: https://api.thematic-lm.eq.com/v1
+    description: Production
+  - url: https://api-staging.thematic-lm.eq.com/v1
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+paths:
+  /analyze:
+    post:
+      summary: Submit analysis request
+      description: Triggers a new thematic analysis job for the specified account and date range
+      operationId: submitAnalysis
+      tags:
+        - Analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisRequest'
+            examples:
+              basic:
+                summary: Basic analysis request
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  start_date: "2024-01-01"
+                  end_date: "2024-01-31"
+              with_idempotency:
+                summary: Request with idempotency key
+                value:
+                  account_id: "550e8400-e29b-41d4-a716-446655440000"
+                  start_date: "2024-01-01"
+                  end_date: "2024-01-31"
+                  idempotency_key: "analysis-2024-01-550e8400"
+      responses:
+        '202':
+          description: Analysis accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisAcceptedResponse'
+              examples:
+                accepted:
+                  value:
+                    analysis_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "pending"
+                    estimated_cost_usd: 2.50
+                    created_at: "2024-01-15T10:30:00Z"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cost_limit_exceeded:
+                  summary: Cost limit exceeded
+                  value:
+                    error:
+                      code: "COST_LIMIT_EXCEEDED"
+                      message: "Estimated cost ($12.50) exceeds budget limit ($5.00)"
+                      detail: "Reduce the date range or increase COST_BUDGET_USD"
+                invalid_date_range:
+                  summary: Invalid date range
+                  value:
+                    error:
+                      code: "INVALID_DATE_RANGE"
+                      message: "start_date must be before end_date"
+                      detail: "Provided: start_date=2024-02-01, end_date=2024-01-01"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /analysis/{analysis_id}:
+    get:
+      summary: Get analysis status
+      description: Poll for analysis status and results
+      operationId: getAnalysisStatus
+      tags:
+        - Analysis
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Analysis job identifier
+      responses:
+        '200':
+          description: Analysis status
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AnalysisPendingResponse'
+                  - $ref: '#/components/schemas/AnalysisInProgressResponse'
+                  - $ref: '#/components/schemas/AnalysisCompletedResponse'
+                  - $ref: '#/components/schemas/AnalysisFailedResponse'
+              examples:
+                pending:
+                  summary: Analysis pending
+                  value:
+                    analysis_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "pending"
+                    created_at: "2024-01-15T10:30:00Z"
+                in_progress:
+                  summary: Analysis in progress
+                  value:
+                    analysis_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "in_progress"
+                    progress:
+                      stage: "coding"
+                      percent_complete: 45
+                    created_at: "2024-01-15T10:30:00Z"
+                    started_at: "2024-01-15T10:30:15Z"
+                completed:
+                  summary: Analysis completed
+                  value:
+                    analysis_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "completed"
+                    results:
+                      themes: []
+                      codebook_version: "v42"
+                      codes_generated: 87
+                      interactions_processed: 1250
+                    created_at: "2024-01-15T10:30:00Z"
+                    started_at: "2024-01-15T10:30:15Z"
+                    completed_at: "2024-01-15T10:45:30Z"
+                failed:
+                  summary: Analysis failed
+                  value:
+                    analysis_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "failed"
+                    error:
+                      code: "LLM_SERVICE_UNAVAILABLE"
+                      message: "OpenAI API unavailable after 3 retries"
+                      detail: "Please retry later or contact support if issue persists"
+                    created_at: "2024-01-15T10:30:00Z"
+                    started_at: "2024-01-15T10:30:15Z"
+                    failed_at: "2024-01-15T10:32:45Z"
+        '404':
+          description: Analysis not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  value:
+                    error:
+                      code: "NOT_FOUND"
+                      message: "Analysis not found"
+                      detail: "No analysis found with ID a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /analyses:
+    get:
+      summary: List recent analyses
+      description: Returns paginated list of recent analysis jobs for the authenticated account
+      operationId: listAnalyses
+      tags:
+        - Analysis
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Number of items per page
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Cursor from previous response for pagination
+      responses:
+        '200':
+          description: Paginated list of analyses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysesListResponse'
+              examples:
+                first_page:
+                  summary: First page of results
+                  value:
+                    data:
+                      - analysis_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                        status: "completed"
+                        created_at: "2024-01-15T10:30:00Z"
+                        completed_at: "2024-01-15T10:45:30Z"
+                      - analysis_id: "b2c3d4e5-f678-9012-bcde-f12345678901"
+                        status: "in_progress"
+                        created_at: "2024-01-14T09:15:00Z"
+                        started_at: "2024-01-14T09:15:30Z"
+                    pagination:
+                      limit: 50
+                      cursor: "eyJpZCI6MTIzNDU2fQ=="
+                      has_more: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token encoding tenant/account context
+
+  schemas:
+    AnalysisRequest:
+      type: object
+      required:
+        - account_id
+        - start_date
+        - end_date
+      additionalProperties: false
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          description: Account identifier for tenant scoping
+        start_date:
+          type: string
+          format: date
+          description: Start date for analysis (ISO 8601)
+          example: "2024-01-01"
+        end_date:
+          type: string
+          format: date
+          description: End date for analysis (ISO 8601)
+          example: "2024-01-31"
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Optional idempotency key to prevent duplicate submissions
+          example: "analysis-2024-01-550e8400"
+
+    AnalysisAcceptedResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - estimated_cost_usd
+        - created_at
+      additionalProperties: false
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: ["pending"]
+        estimated_cost_usd:
+          type: number
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+
+    AnalysisPendingResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - created_at
+      additionalProperties: false
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: ["pending"]
+        created_at:
+          type: string
+          format: date-time
+
+    AnalysisInProgressResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - progress
+        - created_at
+        - started_at
+      additionalProperties: false
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: ["in_progress"]
+        progress:
+          type: object
+          required:
+            - stage
+            - percent_complete
+          additionalProperties: false
+          properties:
+            stage:
+              type: string
+              enum: ["coding", "theme_generation"]
+            percent_complete:
+              type: integer
+              minimum: 0
+              maximum: 100
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+
+    AnalysisCompletedResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - results
+        - created_at
+        - started_at
+        - completed_at
+      additionalProperties: false
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: ["completed"]
+        results:
+          type: object
+          required:
+            - themes
+            - codebook_version
+            - codes_generated
+            - interactions_processed
+          additionalProperties: false
+          properties:
+            themes:
+              type: array
+              description: Array of generated themes
+            codebook_version:
+              type: string
+            codes_generated:
+              type: integer
+              minimum: 0
+            interactions_processed:
+              type: integer
+              minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    AnalysisFailedResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - error
+        - created_at
+        - started_at
+        - failed_at
+      additionalProperties: false
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: ["failed"]
+        error:
+          $ref: '#/components/schemas/Error'
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        failed_at:
+          type: string
+          format: date-time
+
+    AnalysesListResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalysisSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    AnalysisSummary:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - created_at
+      additionalProperties: false
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: ["pending", "in_progress", "completed", "failed"]
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        failed_at:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      required:
+        - limit
+        - has_more
+      additionalProperties: false
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        cursor:
+          type: string
+          description: Opaque cursor for next page (base64-encoded)
+        has_more:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      additionalProperties: false
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code (UPPER_SNAKE_CASE)
+          example: "COST_LIMIT_EXCEEDED"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Estimated cost ($12.50) exceeds budget limit ($5.00)"
+        detail:
+          type: string
+          description: Optional additional context or suggested actions
+          example: "Reduce the date range or increase COST_BUDGET_USD"
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error:
+                  code: "UNAUTHORIZED"
+                  message: "Missing or invalid authentication token"
+                  detail: "Provide a valid Bearer token in the Authorization header"
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              value:
+                error:
+                  code: "FORBIDDEN"
+                  message: "Insufficient permissions for requested resource"
+                  detail: "User does not have access to account 550e8400-e29b-41d4-a716-446655440000"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Maximum requests per window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Requests remaining in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp when limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            rate_limit:
+              value:
+                error:
+                  code: "RATE_LIMIT_EXCEEDED"
+                  message: "Rate limit exceeded: 10 requests per minute"
+                  detail: "Retry after 45 seconds"

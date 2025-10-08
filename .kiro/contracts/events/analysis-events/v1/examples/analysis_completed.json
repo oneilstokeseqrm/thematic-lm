@@ -1,0 +1,15 @@
+{
+  "event_type": "analysis_completed",
+  "analysis_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "account_id": "550e8400-e29b-41d4-a716-446655440000",
+  "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "results": {
+    "themes": [],
+    "codebook_version": "v42",
+    "codes_generated": 87,
+    "interactions_processed": 1250
+  },
+  "started_at": "2024-01-15T10:30:15Z",
+  "completed_at": "2024-01-15T10:45:30Z",
+  "timestamp": "2024-01-15T10:45:30Z"
+}

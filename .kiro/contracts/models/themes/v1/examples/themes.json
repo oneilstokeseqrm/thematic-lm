@@ -1,0 +1,85 @@
+{
+  "analysis_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "account_id": "550e8400-e29b-41d4-a716-446655440000",
+  "codebook_version": "v42",
+  "themes": [
+    {
+      "theme_id": "a1a2b3c4-d5e6-7890-abcd-ef1234567890",
+      "title": "Emotional burden of climate awareness",
+      "description": "Individuals experience significant psychological distress from climate change awareness, including anxiety, grief, and feelings of helplessness. This theme captures the emotional toll of understanding environmental threats while feeling unable to effect meaningful change.",
+      "quotes": [
+        {
+          "quote_id": "12345678-1234-5678-1234-567812345678:ch_0:45-123",
+          "text": "I feel overwhelmed by climate news and worry about the future constantly",
+          "interaction_id": "12345678-1234-5678-1234-567812345678"
+        },
+        {
+          "quote_id": "23456789-2345-6789-2345-678923456789:ch_1:200-287",
+          "text": "The sense of helplessness about environmental destruction keeps me up at night",
+          "interaction_id": "23456789-2345-6789-2345-678923456789"
+        },
+        {
+          "quote_id": "34567890-3456-7890-3456-789034567890:ch_0:12-98",
+          "text": "Recycling feels pointless when corporations produce most emissions",
+          "interaction_id": "34567890-3456-7890-3456-789034567890"
+        }
+      ],
+      "code_ids": [
+        "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+        "d2b3c4d5-e6f7-8901-bcde-f12345678901"
+      ]
+    },
+    {
+      "theme_id": "b2b3c4d5-e6f7-8901-bcde-f12345678901",
+      "title": "Barriers to sustainable living",
+      "description": "Economic and structural obstacles prevent individuals from adopting sustainable practices. High upfront costs, lack of infrastructure, and misaligned incentives (e.g., landlord-tenant split) create barriers to renewable energy adoption and green lifestyle changes.",
+      "quotes": [
+        {
+          "quote_id": "45678901-4567-8901-4567-890145678901:ch_0:56-145",
+          "text": "Solar panels are too expensive for most homeowners despite long-term savings",
+          "interaction_id": "45678901-4567-8901-4567-890145678901"
+        },
+        {
+          "quote_id": "56789012-5678-9012-5678-901256789012:ch_0:23-112",
+          "text": "Landlords won't invest in green upgrades when tenants pay the utility bills",
+          "interaction_id": "56789012-5678-9012-5678-901256789012"
+        },
+        {
+          "quote_id": "67890123-6789-0123-6789-012367890123:ch_0:78-189",
+          "text": "Companies claim to be carbon neutral while still investing in fossil fuels",
+          "interaction_id": "67890123-6789-0123-6789-012367890123"
+        }
+      ],
+      "code_ids": [
+        "e3c4d5e6-f789-0123-cdef-123456789012",
+        "f4d5e6f7-8901-2345-def0-234567890123"
+      ]
+    },
+    {
+      "theme_id": "c3c4d5e6-f789-0123-cdef-123456789012",
+      "title": "Climate-induced displacement and inequality",
+      "description": "Climate change disproportionately affects vulnerable populations, forcing migration and exacerbating existing inequalities. Rising sea levels, drought, and extreme weather events displace communities, with developing nations and marginalized groups bearing the greatest burden.",
+      "quotes": [
+        {
+          "quote_id": "78901234-7890-1234-7890-123478901234:ch_0:34-156",
+          "text": "Rising sea levels will force millions to relocate, creating refugee crises",
+          "interaction_id": "78901234-7890-1234-7890-123478901234"
+        },
+        {
+          "quote_id": "89012345-8901-2345-8901-234589012345:ch_2:450-567",
+          "text": "Drought is already displacing farming communities in developing nations",
+          "interaction_id": "89012345-8901-2345-8901-234589012345"
+        },
+        {
+          "quote_id": "90123456-9012-3456-9012-345690123456:ch_0:89-201",
+          "text": "Wealthy countries can adapt while poor nations face existential threats",
+          "interaction_id": "90123456-9012-3456-9012-345690123456"
+        }
+      ],
+      "code_ids": [
+        "05e6f789-0123-4567-ef01-345678901234"
+      ]
+    }
+  ],
+  "created_at": "2024-01-15T10:45:30Z"
+}

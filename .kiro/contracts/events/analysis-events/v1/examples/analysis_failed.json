@@ -1,0 +1,14 @@
+{
+  "event_type": "analysis_failed",
+  "analysis_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "account_id": "550e8400-e29b-41d4-a716-446655440000",
+  "tenant_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "error": {
+    "code": "LLM_SERVICE_UNAVAILABLE",
+    "message": "OpenAI API unavailable after 3 retries",
+    "detail": "Please retry later or contact support if issue persists"
+  },
+  "started_at": "2024-01-15T10:30:15Z",
+  "failed_at": "2024-01-15T10:32:45Z",
+  "timestamp": "2024-01-15T10:32:45Z"
+}

@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "-e",
+        "GITHUB_TOOLSETS=all",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
+    "neon": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@neondatabase/mcp-server-neon",
+        "start",
+        "napi_e1nkmx5c2t893m3nclyk8pemfgb75t6pz530f4wge4wyxt9dttbjrgm9s8qaz9bw"
+      ],
+      "disabled": false
+    },
+    "langgraph-docs-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "mcpdoc",
+        "mcpdoc",
+        "--urls",
+        "LangGraphPy:https://langchain-ai.github.io/langgraph/llms.txt",
+        "--urls",
+        "LangGraphJS:https://langchain-ai.github.io/langgraphjs/llms.txt",
+        "--transport",
+        "stdio"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
