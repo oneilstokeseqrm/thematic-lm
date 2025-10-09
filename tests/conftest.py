@@ -1,0 +1,23 @@
+"""Pytest configuration and shared fixtures."""
+
+import os
+from typing import AsyncGenerator
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.thematic_lm.models.database import get_db_session
+
+
+@pytest.fixture
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Provide a database session for tests.
+
+    Note:
+        Only available when LIVE_TESTS=1
+    """
+    if os.getenv("LIVE_TESTS") != "1":
+        pytest.skip("Live tests disabled")
+
+    async for session in get_db_session():
+        yield session
