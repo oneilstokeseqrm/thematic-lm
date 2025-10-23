@@ -59,3 +59,9 @@ Thumbs.db.kiro/settings/mcp.json
 __pycache__/
 *.pyc
 .pytest_cache/
+.kiro/settings/mcp.json
+.env
+.env.local
+__pycache__/
+*.pyc
+.pytest_cache/
