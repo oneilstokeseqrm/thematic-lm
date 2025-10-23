@@ -48,7 +48,7 @@ The orchestrator coordinates the multi-agent thematic analysis pipeline using La
 
 **User Story**: As an orchestrator, I want to coordinate multiple agents in sequence and parallel, so that the analysis pipeline executes efficiently.
 
-#### Acceptance Criteria
+#### Acceptance Criteria (Long-term)
 
 1. WHEN the coding stage begins, THE SYSTEM SHALL use Send API to spawn parallel coder agents (one per identity from identities.yaml)
 2. WHEN all coder agents complete, THE SYSTEM SHALL invoke the code aggregator node with collected outputs
@@ -56,6 +56,14 @@ The orchestrator coordinates the multi-agent thematic analysis pipeline using La
 4. WHEN the reviewer completes, THE SYSTEM SHALL transition to theme generation stage via conditional edge
 5. WHEN the theme generation stage begins, THE SYSTEM SHALL spawn parallel theme-coder agents via Send API
 6. WHEN all theme-coder agents complete, THE SYSTEM SHALL invoke the theme aggregator node to produce final themes
+
+#### Acceptance Criteria (Phase B Part 1 - Simplified)
+
+1. WHEN the coding stage begins, THE SYSTEM SHALL invoke internal/agents-coder@v1 for each identity loaded from identities.yaml
+2. WHEN each coder agent completes, THE SYSTEM SHALL collect codes directly into state["codes"] without aggregation or review
+3. WHEN all coder agents complete, THE SYSTEM SHALL transition directly to completion (no aggregator/reviewer/theme stages in Part 1)
+4. WHEN identities are loaded at process start, THE SYSTEM SHALL use the shared utility from src.thematic_lm.utils.identities
+5. WHEN coder agents execute, THE SYSTEM SHALL pass identity context (id, name, prompt_prefix) to each agent
 
 ### Requirement 4: Checkpoint Persistence
 
@@ -88,11 +96,11 @@ The orchestrator coordinates the multi-agent thematic analysis pipeline using La
 
 #### Acceptance Criteria
 
-1. WHEN the process starts, THE SYSTEM SHALL load identities.yaml and parse identity definitions (id, name, description, prompt_prefix)
-2. WHEN identities.yaml contains invalid YAML, THE SYSTEM SHALL fail fast with a parse error
-3. WHEN identities.yaml contains no identities, THE SYSTEM SHALL fail fast with a validation error
-4. WHEN identities.yaml is loaded, THE SYSTEM SHALL make identity list accessible to coder agent nodes
-5. WHEN an identity has a missing required field (id, name, prompt_prefix), THE SYSTEM SHALL fail fast with a validation error
+1. WHEN the process starts, THE SYSTEM SHALL import and use the shared identity loader from `src.thematic_lm.utils.identities` to load identities.yaml with required fields (id, name, prompt_prefix) and optional field (description)
+2. WHEN the shared loader raises a validation error (invalid YAML, missing required fields, or no identities), THE SYSTEM SHALL surface the error and fail fast with a clear error message
+3. WHEN identities are loaded successfully, THE SYSTEM SHALL make the identity list accessible to coder agent nodes
+4. WHEN an identity has no description field, THE SYSTEM SHALL accept the identity as valid (per shared loader validation)
+5. WHEN identities are loaded at process start (Phase B Part 1), THE SYSTEM SHALL load them once and reuse across all coder agent invocations (not per-job)
 
 ### Requirement 7: Conditional Routing
 
@@ -109,11 +117,17 @@ The orchestrator coordinates the multi-agent thematic analysis pipeline using La
 
 **User Story**: As a system operator, I want to track actual costs during execution, so that I can compare against estimates.
 
-#### Acceptance Criteria
+#### Acceptance Criteria (Long-term)
 
 1. WHEN each LLM call completes, THE SYSTEM SHALL record token usage (prompt_tokens, completion_tokens) in state metadata
 2. WHEN the job completes, THE SYSTEM SHALL calculate total cost (sum of all LLM calls) and include in final checkpoint
 3. WHEN actual cost exceeds estimate by >20%, THE SYSTEM SHALL log a warning for cost monitoring
+
+#### Acceptance Criteria (Phase B Part 1 - Token Usage Only)
+
+1. WHEN each coder agent completes, THE SYSTEM SHALL record token usage (prompt_tokens, completion_tokens) in state["metadata"]["token_usage"]
+2. WHEN the job completes, THE SYSTEM SHALL aggregate total token usage across all coder agents
+3. WHEN Phase B Part 1 executes, THE SYSTEM SHALL NOT calculate costs (no dependency on cost-manager; cost calculation deferred to Phase B Part 2+)
 
 ### Requirement 9: Live Test Gating
 
@@ -123,7 +137,10 @@ The orchestrator coordinates the multi-agent thematic analysis pipeline using La
 
 1. WHEN LIVE_TESTS=0, THE SYSTEM SHALL use mock LLM responses in test mode
 2. WHEN LIVE_TESTS=1, THE SYSTEM SHALL use real LLM API calls in test mode
-3. WHEN DRY_RUN=1, THE SYSTEM SHALL simulate LLM calls without actual API requests (return mock responses)
+3. WHEN DRY_RUN=1, THE SYSTEM SHALL simulate LLM calls without actual API requests (return mock responses end-to-end)
+4. WHEN DRY_RUN=1 and identities have no description field, THE SYSTEM SHALL proceed normally with required fields only
+5. WHEN Phase B Part 1 executes with DRY_RUN=1, THE SYSTEM SHALL return mock codes from coder agents without calling OpenAI API
+6. WHEN Phase B Part 1 executes with LIVE_TESTS=1, THE SYSTEM SHALL gate integration tests that call real LLM APIs
 
 ### Requirement 10: Observability Integration
 

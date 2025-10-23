@@ -4,6 +4,8 @@
 
 The orchestrator is the central coordinator for the thematic analysis pipeline. It uses LangGraph's StateGraph to define a directed graph of agent nodes with typed state, conditional edges for routing, and PostgresSaver for checkpoint persistence.
 
+### Long-term Architecture (Full Pipeline)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Orchestrator                              │
@@ -23,6 +25,143 @@ The orchestrator is the central coordinator for the thematic analysis pipeline. 
 │  Identities Config ←→ identities.yaml                      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Phase B Part 1 Architecture (Simplified Path)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                Orchestrator (Phase B Part 1)                 │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │              StateGraph                             │    │
+│  │                                                      │    │
+│  │  [Start] → [Fetch Data] → [Coder Node]            │    │
+│  │                              ↓                       │    │
+│  │                          [Complete]                  │    │
+│  │                                                      │    │
+│  │  Other nodes present but not on Part 1 path:       │    │
+│  │  [Aggregator], [Reviewer], [Theme Coders],         │    │
+│  │  [Theme Aggregator] - all deferred                  │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                              │
+│  Identities loaded once at process start                    │
+│  Token usage tracked (no cost calculation in Part 1)        │
+│  Semaphore rate-limit: max_parallel_llm_calls               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Phase B Part 1 Scope**:
+- Fetch interactions from database
+- Chunk interactions using models/chunking@v1
+- Fan-out coder calls per identity/chunk (via internal/agents-coder@v1)
+- Gather codes directly into state["codes"]
+- Track token usage only (no cost calculation)
+- Complete job with codes output
+
+**Deferred to Phase B Part 2+**:
+- Code aggregation and deduplication
+- Reviewer and codebook updates
+- Theme generation (coder + aggregator)
+- Cost calculation and budget enforcement
+- PostgresSaver checkpointing (beyond basic state)
+
+## Phase B Part 1: Coder Node Implementation
+
+### Coder Node Design
+
+The `coder_node` is the core Phase B Part 1 implementation that:
+
+1. **Loads identities once** at process start via `src.thematic_lm.utils.identities.load_identities()`
+2. **Chunks interactions** using models/chunking@v1 contract (tiktoken cl100k_base, max tokens per chunk)
+3. **Fan-out coder calls** per identity/chunk combination:
+   - For each interaction: chunk into segments
+   - For each chunk: invoke internal/agents-coder@v1 for each identity
+   - Async execution with semaphore rate-limit (`max_parallel_llm_calls`)
+4. **Gathers results** into state["codes"] (flat list of all codes from all identities/chunks)
+5. **Tracks token usage** in state["metadata"]["token_usage"] (prompt_tokens, completion_tokens per call)
+
+### Rate Limiting with Semaphore
+
+```python
+import asyncio
+from typing import List, Dict
+
+async def coder_node(state: AnalysisState, config: Dict) -> AnalysisState:
+    """Execute coder agents for all identities and chunks."""
+    max_parallel = config.get("max_parallel_llm_calls", 5)
+    semaphore = asyncio.Semaphore(max_parallel)
+    
+    # Load identities (already loaded at module init)
+    identities = IDENTITIES
+    
+    # Chunk all interactions
+    chunks = []
+    for interaction in state["interactions"]:
+        interaction_chunks = chunk_text(
+            interaction["text"],
+            max_tokens=config.get("chunk_max_tokens", 500)
+        )
+        chunks.extend([
+            {
+                "interaction_id": interaction["id"],
+                "chunk_index": idx,
+                "text": chunk["text"],
+                "start_pos": chunk["start_pos"],
+                "end_pos": chunk["end_pos"]
+            }
+            for idx, chunk in enumerate(interaction_chunks)
+        ])
+    
+    # Fan-out coder calls per identity/chunk
+    async def call_coder_with_limit(identity, chunk):
+        async with semaphore:
+            return await invoke_coder_agent(identity, chunk, config)
+    
+    tasks = [
+        call_coder_with_limit(identity, chunk)
+        for identity in identities
+        for chunk in chunks
+    ]
+    
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Collect codes and token usage
+    all_codes = []
+    token_usage = {"prompt_tokens": 0, "completion_tokens": 0}
+    
+    for result in results:
+        if isinstance(result, Exception):
+            logger.error(f"Coder agent failed: {result}")
+            continue
+        
+        all_codes.extend(result["codes"])
+        token_usage["prompt_tokens"] += result["token_usage"]["prompt_tokens"]
+        token_usage["completion_tokens"] += result["token_usage"]["completion_tokens"]
+    
+    return {
+        **state,
+        "codes": all_codes,
+        "metadata": {
+            **state.get("metadata", {}),
+            "token_usage": token_usage
+        },
+        "current_stage": "complete"
+    }
+```
+
+### Configuration Knobs (Phase B Part 1)
+
+Settings used by orchestrator (documented in config/settings.py or .env):
+
+- `DRY_RUN` (default: 1): Simulate LLM calls without actual API requests
+- `LIVE_TESTS` (default: 0): Gate integration tests that call real APIs
+- `max_parallel_llm_calls` (default: 5): Max concurrent LLM calls (semaphore limit)
+- `chunk_max_tokens` (default: 500): Max tokens per chunk (models/chunking@v1)
+- `IDENTITIES_PATH` (default: "identities.yaml"): Path to identities configuration
+
+**Not used in Phase B Part 1** (deferred to Part 2+):
+- Pricing fields (cost per token, budget limits)
+- Checkpoint retention policies
+- Aggregator/reviewer/theme configuration
 
 ## Key Classes/Functions
 
@@ -63,20 +202,19 @@ class AnalysisState(TypedDict):
 Main orchestrator class:
 
 ```python
+from src.thematic_lm.utils.identities import load_identities, Identity
+
+# Load identities once at module initialization
+IDENTITIES = load_identities("identities.yaml")
+
 class AnalysisOrchestrator:
     def __init__(
         self,
-        db_uri: str,
-        identities_path: str = "identities.yaml"
+        db_uri: str
     ):
-        self.identities = self._load_identities(identities_path)
+        self.identities = IDENTITIES
         self.checkpointer = PostgresSaver.from_conn_string(db_uri)
         self.graph = self._build_graph()
-    
-    def _load_identities(self, path: str) -> List[Identity]:
-        """Load and validate identities from YAML."""
-        # Validate required fields: id, name, prompt_prefix
-        # Fail fast if invalid
     
     def _build_graph(self) -> StateGraph:
         """Build LangGraph StateGraph with nodes and edges."""
@@ -291,43 +429,60 @@ CREATE TABLE analysis_checkpoints (
 
 ## Identities Configuration
 
+### Shared Identity Loader
+
+The orchestrator consumes the shared identity loader from `src.thematic_lm.utils.identities`:
+
+```python
+from src.thematic_lm.utils.identities import load_identities, Identity
+
+# Load once at module initialization
+IDENTITIES = load_identities("identities.yaml")
+```
+
+**Note**: The orchestrator consumes the shared loader and only surfaces its validation errors; it does not re-implement identity parsing.
+
+The shared loader validates:
+- **Required fields**: `id`, `name`, `prompt_prefix`
+- **Optional fields**: `description`
+
+### Error Handling
+
+The orchestrator surfaces validation errors from the shared loader:
+
+```python
+try:
+    identities = load_identities("identities.yaml")
+except ValueError as e:
+    # Surface validation errors (missing required fields, no identities, etc.)
+    logger.error(f"Identity configuration error: {e}")
+    raise
+except FileNotFoundError as e:
+    # Surface file not found errors
+    logger.error(f"Identity file not found: {e}")
+    raise
+except yaml.YAMLError as e:
+    # Surface YAML parsing errors
+    logger.error(f"Invalid YAML in identities file: {e}")
+    raise
+```
+
 ### identities.yaml Format
 
+See `src.thematic_lm.utils.identities` for the canonical schema and validation logic.
+
+Example format:
 ```yaml
 identities:
   - id: "objective-analyst"
     name: "Objective Analyst"
-    description: "Neutral, fact-focused perspective"
+    description: "Neutral, fact-focused perspective"  # OPTIONAL
     prompt_prefix: "You are an objective analyst focused on factual observations..."
   
   - id: "empathy-focused"
     name: "Empathy-Focused Researcher"
-    description: "Human-centered, emotional perspective"
+    # description field omitted - this is valid
     prompt_prefix: "You are an empathetic researcher focused on human experiences..."
-```
-
-### Loading at Process Start
-
-```python
-# Load once at module initialization
-IDENTITIES = load_identities("identities.yaml")
-
-def load_identities(path: str) -> List[Identity]:
-    with open(path) as f:
-        config = yaml.safe_load(f)
-    
-    identities = []
-    for item in config["identities"]:
-        # Validate required fields
-        if not all(k in item for k in ["id", "name", "prompt_prefix"]):
-            raise ValueError(f"Invalid identity: {item}")
-        
-        identities.append(Identity(**item))
-    
-    if not identities:
-        raise ValueError("No identities defined in identities.yaml")
-    
-    return identities
 ```
 
 ## Dependencies

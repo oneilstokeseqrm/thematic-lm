@@ -21,3 +21,18 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
     async for session in get_db_session():
         yield session
+
+
+def pytest_configure(config):
+    """Register custom markers for test gating."""
+    config.addinivalue_line(
+        "markers",
+        "live: mark test as requiring live API calls (requires LIVE_TESTS=1)"
+    )
+
+
+# LIVE_TESTS gating marker
+live_tests_marker = pytest.mark.skipif(
+    os.getenv("LIVE_TESTS") != "1",
+    reason="Live tests disabled (set LIVE_TESTS=1 to enable)"
+)

@@ -48,6 +48,32 @@
 - **Embeddings**: `text-embedding-3-large` for code similarity
 - API keys stored in `.env` with secure handling
 
+## Identities Configuration
+
+### Schema
+Identities define the analytical perspectives used by coder agents. Each identity must have:
+- **Required fields**: `id`, `name`, `prompt_prefix`
+- **Optional fields**: `description`
+
+### Example
+```yaml
+identities:
+  - id: analyst
+    name: "Analytical Perspective"
+    description: "Optional description field"  # OPTIONAL
+    prompt_prefix: |
+      You are an analytical researcher...
+  
+  - id: empathetic
+    name: "Empathetic Perspective"
+    # description omitted - this is valid
+    prompt_prefix: |
+      You are an empathetic listener...
+```
+
+### Location
+Identities are defined in `identities.yaml` at the project root. The file is loaded once at process start and cached.
+
 ## Development Tools
 
 - **Dependency Management**: `uv` or `poetry`

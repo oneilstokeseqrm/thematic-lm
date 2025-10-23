@@ -1,25 +1,30 @@
 provides:
   - id: internal/agents-coder@v1
     stability: beta
+    description: Identity-based coder agents for generating codes with quotes
 
 consumes:
   - id: models/chunking@v1
     required_fields: [chunk_index, text, start_pos, end_pos, token_count]
     behavior:
       on_missing_field: reject_with_error
+    description: Text chunking strategy with exact Unicode offset preservation
   
   - id: models/quote_id@v1
     required_fields: [quote_id, text, interaction_id, chunk_index, start_pos, end_pos]
     behavior:
       on_missing_field: reject_with_error
-
-internal_dependencies:
-  - component: cost-manager
-    purpose: Track token usage and costs
-    failure_mode: log_and_continue
+    description: Quote ID encoding format supporting optional msg_{n} for email threads
 
 external_dependencies:
   - service: openai_api
     purpose: Generate codes via GPT-4o
     failure_mode: retry_then_fail
     retry_strategy: exponential_backoff_3x
+    notes: Token usage tracked (prompt_tokens, completion_tokens); no cost calculation in Phase B Part 1
+
+notes:
+  - No internal dependency on cost-manager in Phase B Part 1
+  - Token usage tracking only (no pricing/cost calculation)
+  - Self-contained implementation for sequential task execution
+  - DRY_RUN and LIVE_TESTS flags respected throughout

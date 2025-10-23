@@ -34,30 +34,55 @@ consumes:
       on_missing_field: reject_with_error
       on_unknown_version: reject_with_error
 
+consumes_internal:
+  - id: internal/agents-coder@v1
+    stability: beta
+    description: Identity-based coder agents for generating codes with quotes
+    required_fields: [codes, token_usage]
+    behavior:
+      on_missing_field: reject_with_error
+    notes:
+      - Phase B Part 1 consumes this interface directly
+      - Token usage only (no cost calculation in Part 1)
+
 internal_dependencies:
   - component: coder-agents
     purpose: Generate codes from interactions
     failure_mode: partial_degradation  # Continue with successful agents
+    notes:
+      - Phase B Part 1 invokes internal/agents-coder@v1 directly
+      - No dependency on cost-manager in Phase B Part 1
   
   - component: code-aggregator
     purpose: Deduplicate and merge codes
     failure_mode: abort_job
+    notes:
+      - Deferred to Phase B Part 2+
   
   - component: reviewer
     purpose: Update codebook with new codes
     failure_mode: abort_job
+    notes:
+      - Deferred to Phase B Part 2+
   
   - component: theme-coder-agents
     purpose: Generate theme proposals
     failure_mode: partial_degradation
+    notes:
+      - Deferred to Phase B Part 2+
   
   - component: theme-aggregator
     purpose: Produce final themes
     failure_mode: abort_job
+    notes:
+      - Deferred to Phase B Part 2+
   
   - component: cost-manager
     purpose: Track token usage and costs
     failure_mode: log_and_continue
+    notes:
+      - Not used in Phase B Part 1 (token usage only)
+      - Cost calculation deferred to Phase B Part 2+
   
   - component: observability
     purpose: Structured logging
